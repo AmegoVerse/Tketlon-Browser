@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src data:">
+  <meta name="color-scheme" content="light dark">
+  <title>Pengaturan</title>
+  <link rel="stylesheet" href="pages.css">
+</head>
+<body>
+  <header>Pengaturan</header>
+  <div class="layout">
+    <nav>
+      <a href="#general" data-s="general">Umum</a>
+      <a href="#bookmarks" data-s="bookmarks">Bookmark</a>
+      <a href="#extensions" data-s="extensions">Ekstensi</a>
+    </nav>
+    <main>
+      <section id="s-general">
+        <h2>Mesin pencari</h2>
+        <div class="card"><div class="row"><div class="grow"><div class="title">Google</div><div class="sub">google.com &middot; dipakai untuk address bar dan Tab Baru</div></div></div></div>
+
+        <h2>Halaman beranda</h2>
+        <div class="card">
+          <label class="radio"><input type="radio" name="hp" value="newtab" id="hp-newtab"><span><b>Halaman Tab Baru</b><br><span class="sub">Tombol Beranda dan tab pertama membuka halaman pencarian tketlon.</span></span></label>
+          <label class="radio"><input type="radio" name="hp" value="custom" id="hp-custom"><span><b>Alamat khusus</b></span></label>
+          <div class="row" style="padding-top:0">
+            <input type="text" id="hp-url" placeholder="https://www.google.com" spellcheck="false" autocomplete="off">
+            <button class="btn primary" id="hp-save">Simpan</button>
+          </div>
+          <div class="msg" id="hp-msg"></div>
+        </div>
+
+        <h2>Tampilan</h2>
+        <div class="card">
+          <div class="row"><div class="grow"><div class="title">Tampilkan bookmark bar</div><div class="sub">Ctrl+Shift+B</div></div>
+            <label class="switch"><input type="checkbox" id="bar-toggle" aria-label="Tampilkan bookmark bar"><span></span></label></div>
+        </div>
+        <p class="note" id="store-note"></p>
+      </section>
+
+      <section id="s-bookmarks">
+        <h2>Bookmark</h2>
+        <p class="note">Tambah bookmark dengan tombol bintang di address bar atau Ctrl+D.</p>
+        <div class="card" id="bm-list"></div>
+      </section>
+
+      <section id="s-extensions">
+        <h2>Ekstensi</h2>
+        <div class="warn">Format yang didukung: ekstensi WebExtension (Manifest V2/V3) dalam <b>folder ter-unpack</b>. Electron hanya mendukung sebagian API <code>chrome.*</code>, jadi tidak semua ekstensi akan berfungsi. Add-on Firefox (.xpi) tidak bisa dipasang, tetapi banyak ekstensi lintas-browser punya versi folder yang bisa dimuat di sini.</div>
+        <div class="card">
+          <div class="row"><div class="grow"><div class="title">Dukungan ekstensi</div>
+            <div class="sub">Ekstensi hanya bisa dimuat jika sesi memakai penyimpanan disk sementara (bukan murni di memori). Datanya dihapus saat aplikasi dibuka berikutnya. Perubahan butuh mulai ulang.</div></div>
+            <label class="switch"><input type="checkbox" id="ext-mode" aria-label="Dukungan ekstensi"><span></span></label></div>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
+          <h2 style="margin:0">Ekstensi terpasang</h2>
+          <button class="btn primary" id="ext-add">Tambah ekstensi…</button>
+        </div>
+        <div class="msg" id="ext-msg" style="margin:0 0 8px"></div>
+        <div class="card" id="ext-list"></div>
+      </section>
+    </main>
+  </div>
+  <script src="settings.js"></script>
+</body>
+</html>

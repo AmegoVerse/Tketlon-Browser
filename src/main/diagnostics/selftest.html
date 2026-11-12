@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Uji mandiri Tketlon</title>
+<style>
+  :root { color-scheme: dark; --bg:#0a1020; --panel:#111a30; --line:#2a3a63; --text:#e7ecf8; --muted:#8a97b5; --ok:#2ad4f0; --bad:#ff6b6b; --warn:#f5c04a; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 "Segoe UI", system-ui, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 32px 20px 64px; }
+  h1 { margin: 0 0 4px; font-size: 28px; letter-spacing: -.5px; }
+  h2 { margin: 28px 0 8px; font-size: 16px; color: var(--muted); font-weight: 600; }
+  .lead { color: var(--muted); margin: 0 0 16px; max-width: 62ch; }
+  #summary { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 12px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+  #summary b { font-size: 15px; }
+  button { font: inherit; color: #04101f; background: linear-gradient(135deg,#2f7df6,#2ad4f0); border: 0; border-radius: 8px; padding: 6px 14px; font-weight: 600; cursor: pointer; }
+  button.ghost { background: none; color: var(--text); border: 1px solid var(--line); }
+  button:focus-visible { outline: 2px solid var(--ok); outline-offset: 2px; }
+  .row { display: grid; grid-template-columns: 74px 1fr; gap: 12px; padding: 10px 0; border-bottom: 1px solid #1a2542; }
+  .chip { align-self: start; text-align: center; font-size: 12px; font-weight: 700; padding: 2px 0; border-radius: 6px; border: 1px solid currentColor; }
+  .pass { color: var(--ok); } .fail { color: var(--bad); } .info { color: var(--warn); } .skip, .wait { color: var(--muted); }
+  .name { font-weight: 600; }
+  .detail { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+  textarea { width: 100%; height: 150px; margin-top: 8px; background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 10px; font: 12px/1.5 Consolas, monospace; }
+  .note { color: var(--muted); font-size: 13px; margin-top: 24px; max-width: 70ch; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Uji mandiri Tketlon</h1>
+  <p class="lead">Halaman ini memeriksa klaim privasi dan kompatibilitas game langsung dari browser. Tidak ada data yang dikirim ke luar; semua uji memakai server lokal 127.0.0.1.</p>
+  <div id="summary"><b id="sum-text">Menjalankan uji...</b><button id="rerun" class="ghost">Jalankan ulang</button><button id="fs" class="ghost">Uji layar penuh</button></div>
+  <div id="list"></div>
+  <h2>Laporan teks</h2>
+  <textarea id="report" readonly></textarea>
+  <p class="note">Penghapusan data (cookie, localStorage, IndexedDB, Cache Storage, service worker) diuji otomatis pada setiap Reset Identity; hasilnya ada di Privacy Receipt. Uji WebRTC di sini tidak memeriksa IP publik, karena itu butuh server STUN di luar dan sengaja tidak dilakukan. Uji Canvas hanya memeriksa konsistensi, bukan penyamaran fingerprint.</p>
+</main>
+<script>
+'use strict';
+const $ = (s) => document.querySelector(s);
+const tests = [];
+const T = (group, name, run) => tests.push({ group, name, run });
+const pass = (d) => ({ status: 'pass', detail: d });
+const fail = (d) => ({ status: 'fail', detail: d });
+const info = (d) => ({ status: 'info', detail: d });
+const skip = (d) => ({ status: 'skip', detail: d });
+const LABEL = { pass: 'LULUS', fail: 'GAGAL', info: 'CATATAN', skip: 'DILEWATI', wait: '...' };
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+function loadScript(host) {
+  return new Promise((resolve) => {
+    const s = document.createElement('script');
+    window.__trackerLoaded = false;
+    s.src = `http://${host}:${location.port}/pixel.js?t=${Date.now()}`;
+    s.onload = () => resolve(true);
+    s.onerror = () => resolve(false);
+    setTimeout(() => resolve(false), 4000);
+    document.head.append(s);
+  });
+}
+
+function canvasHash() {
+  const c = document.createElement('canvas'); c.width = 200; c.height = 40;
+  const g = c.getContext('2d');
+  g.fillStyle = '#2f7df6'; g.fillRect(0, 0, 200, 40);
+  g.font = '16px Arial'; g.fillStyle = '#fff'; g.fillText('Tketlon 123', 8, 26);
+  const s = c.toDataURL(); let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  return h;
+}
+
+// ---- Privasi
+T('Privasi', 'Pemblokir pelacak', async () => {
+  const st = await (await fetch('/api/state')).json();
+  if (!st.filterEnabled) return skip('Pemblokir pelacak sedang dimatikan.');
+  if (st.siteException) return skip('Situs ini dikecualikan dari pemblokir.');
+  const control = await loadScript('control.localhost');
+  if (!control) return skip('Permintaan kontrol gagal dimuat, hasil tidak dapat dipastikan.');
+  const tracker = await loadScript('selftest-tracker.localhost');
+  return tracker ? fail('Domain uji yang ada di daftar filter tetap dimuat.') : pass('Domain uji di daftar filter diblokir, permintaan kontrol lolos.');
+});
+T('Privasi', 'WebRTC tidak menampilkan IP lokal', async () => {
+  const pc = new RTCPeerConnection({ iceServers: [] });
+  pc.createDataChannel('x');
+  const cands = [];
+  const done = new Promise((res) => { pc.onicecandidate = (e) => (e.candidate ? cands.push(e.candidate.candidate) : res()); setTimeout(res, 3000); });
+  await pc.setLocalDescription(await pc.createOffer());
+  await done; pc.close();
+  const addrs = cands.map((c) => c.split(' ')[4]).filter(Boolean);
+  const priv = addrs.filter((a) => /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.)/.test(a) || /^(f[cd][0-9a-f]{2}|fe80):/i.test(a));
+  if (priv.length) return fail('IP lokal terlihat: ' + priv.join(', '));
+  return pass(addrs.length ? `Tidak ada IP privat. Kandidat: ${addrs.length} (${addrs.map((a) => (a.endsWith('.local') ? 'mDNS' : a)).join(', ')})` : 'Tidak ada kandidat yang dibagikan.');
+});
+T('Privasi', 'Izin lokasi ditolak', () => new Promise((res) => {
+  navigator.geolocation.getCurrentPosition(() => res(fail('Izin lokasi diberikan tanpa persetujuan.')), (e) => res(e.code === 1 ? pass('Ditolak (PERMISSION_DENIED).') : info('Hasil tidak pasti, kode ' + e.code)), { timeout: 4000 });
+}));
+T('Privasi', 'Izin kamera dan mikrofon ditolak', async () => {
+  try { (await navigator.mediaDevices.getUserMedia({ audio: true, video: true })).getTracks().forEach((t) => t.stop()); return fail('Akses media diberikan tanpa persetujuan.'); }
+  catch (e) { return e.name === 'NotAllowedError' ? pass('Ditolak (NotAllowedError).') : info('Hasil tidak pasti: ' + e.name); }
+});
+T('Privasi', 'Izin notifikasi tidak diberikan', async () => {
+  const p = await Notification.requestPermission();
+  return p === 'granted' ? fail('Notifikasi diizinkan tanpa persetujuan.') : pass('Status: ' + p);
+});
+T('Privasi', 'User-Agent bersih', async () => (/Electron|Tketlon/i.test(navigator.userAgent) ? fail(navigator.userAgent) : pass(navigator.userAgent)));
+T('Privasi', 'Canvas konsisten', async () => (canvasHash() === canvasHash() ? pass('Hasil sama pada dua pembacaan. Tidak ada penyamaran fingerprint.') : fail('Hasil berubah antar pembacaan.')));
+
+// ---- Game
+T('Kompatibilitas game', 'WebGL', async () => {
+  const gl = document.createElement('canvas').getContext('webgl');
+  if (!gl) return fail('Tidak tersedia.');
+  const ext = gl.getExtension('WEBGL_debug_renderer_info');
+  const r = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+  return /swiftshader|software|llvmpipe/i.test(r) ? info('Renderer perangkat lunak, GPU mungkin tidak aktif: ' + r) : pass(r);
+});
+T('Kompatibilitas game', 'WebGL2', async () => (document.createElement('canvas').getContext('webgl2') ? pass('Tersedia.') : fail('Tidak tersedia.')));
+T('Kompatibilitas game', 'WebAssembly', async () => (typeof WebAssembly === 'object' && WebAssembly.validate(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0])) ? pass('Tersedia.') : fail('Tidak tersedia.')));
+T('Kompatibilitas game', 'Web Audio', async () => { const A = window.AudioContext || window.webkitAudioContext; if (!A) return fail('Tidak tersedia.'); const c = new A(); const s = c.state; c.close(); return pass('Status awal: ' + s + ' (kebijakan autoplay berlaku)'); });
+T('Kompatibilitas game', 'WebSocket', async () => (typeof WebSocket === 'function' ? pass('Tersedia.') : fail('Tidak tersedia.')));
+T('Kompatibilitas game', 'Gamepad API', async () => (typeof navigator.getGamepads === 'function' ? pass('Tersedia.') : fail('Tidak tersedia.')));
+T('Kompatibilitas game', 'Layar penuh dan pointer lock', async () => (document.fullscreenEnabled && 'requestPointerLock' in Element.prototype ? pass('API tersedia. Tekan "Uji layar penuh" untuk uji nyata.') : fail('API tidak lengkap.')));
+T('Kompatibilitas game', 'Frame rate', () => new Promise((res) => {
+  let n = 0; const t0 = performance.now();
+  const f = (t) => { n++; if (t - t0 < 1000) requestAnimationFrame(f); else { const fps = Math.round(n / ((t - t0) / 1000)); res(fps >= 55 ? pass(fps + ' FPS') : info(fps + ' FPS (tergantung layar, GPU, dan tab aktif)')); } };
+  requestAnimationFrame(f);
+}));
+
+const results = [];
+function render() {
+  const list = $('#list'); list.replaceChildren();
+  let group = '';
+  for (const r of results) {
+    if (r.group !== group) { group = r.group; const h = document.createElement('h2'); h.textContent = group; list.append(h); }
+    const row = document.createElement('div'); row.className = 'row';
+    const chip = document.createElement('div'); chip.className = 'chip ' + r.status; chip.textContent = LABEL[r.status];
+    const body = document.createElement('div');
+    const n = document.createElement('div'); n.className = 'name'; n.textContent = r.name;
+    const d = document.createElement('div'); d.className = 'detail'; d.textContent = r.detail || '';
+    body.append(n, d); row.append(chip, body); list.append(row);
+  }
+  const c = (s) => results.filter((r) => r.status === s).length;
+  $('#sum-text').textContent = `${c('pass')} lulus, ${c('fail')} gagal, ${c('info')} catatan, ${c('skip')} dilewati`;
+  $('#report').value = results.map((r) => `[${LABEL[r.status]}] ${r.group} / ${r.name}: ${r.detail || ''}`).join('\n');
+}
+
+async function runAll() {
+  results.length = 0; $('#sum-text').textContent = 'Menjalankan uji...';
+  for (const t of tests) {
+    results.push({ group: t.group, name: t.name, status: 'wait', detail: '' }); render();
+    let out;
+    try { out = await t.run(); } catch (e) { out = fail('Error: ' + (e && e.message ? e.message : e)); }
+    Object.assign(results[results.length - 1], out); render();
+  }
+}
+
+$('#rerun').addEventListener('click', runAll);
+$('#fs').addEventListener('click', async () => {
+  const row = { group: 'Kompatibilitas game', name: 'Layar penuh (uji nyata)' };
+  try {
+    await document.documentElement.requestFullscreen();
+    await sleep(1200); await document.exitFullscreen();
+    Object.assign(row, pass('Masuk dan keluar layar penuh berhasil.'));
+  } catch (e) { Object.assign(row, fail(e.message)); }
+  const i = results.findIndex((r) => r.name === row.name);
+  if (i >= 0) results[i] = row; else results.push(row);
+  render();
+});
+runAll();
+</script>
+</body>
+</html>

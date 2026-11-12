@@ -1,0 +1,30 @@
+'use strict';
+const { contextBridge, ipcRenderer } = require('electron');
+
+contextBridge.exposeInMainWorld('tketlon', {
+  getState: () => ipcRenderer.invoke('tabs:get'),
+  newTab: () => ipcRenderer.invoke('tab:new'),
+  closeTab: (id) => ipcRenderer.invoke('tab:close', id),
+  activateTab: (id) => ipcRenderer.invoke('tab:activate', id),
+  go: (input) => ipcRenderer.invoke('nav:go', input),
+  back: () => ipcRenderer.invoke('nav:back'),
+  forward: () => ipcRenderer.invoke('nav:forward'),
+  reload: () => ipcRenderer.invoke('nav:reload'),
+  home: () => ipcRenderer.invoke('nav:home'),
+  resetIdentity: () => ipcRenderer.invoke('identity:reset'),
+  getPrivacy: () => ipcRenderer.invoke('privacy:get'),
+  privacyMenu: () => ipcRenderer.invoke('privacy:menu'),
+  listBookmarks: () => ipcRenderer.invoke('bookmarks:list'),
+  toggleBookmark: () => ipcRenderer.invoke('bookmarks:toggle'),
+  bookmarkMenu: (id) => ipcRenderer.invoke('bookmarks:menu', id),
+  manageBookmarks: () => ipcRenderer.invoke('bookmarks:manage'),
+  getSettings: () => ipcRenderer.invoke('settings:get'),
+  mainMenu: () => ipcRenderer.invoke('menu:main'),
+  extensionsMenu: () => ipcRenderer.invoke('menu:extensions'),
+  openLens: () => ipcRenderer.invoke('lens:open'),
+  onPrivacy: (cb) => ipcRenderer.on('privacy:stats', (_e, s) => cb(s)),
+  onTabs: (cb) => ipcRenderer.on('tabs:update', (_e, state) => cb(state)),
+  onBookmarks: (cb) => ipcRenderer.on('bookmarks:update', (_e, list) => cb(list)),
+  onSettings: (cb) => ipcRenderer.on('settings:update', (_e, s) => cb(s)),
+  onFocusAddress: (cb) => ipcRenderer.on('ui:focus-address', () => cb()),
+});

@@ -1,0 +1,56 @@
+{
+  "name": "tketlon-browser",
+  "productName": "Tketlon Browser",
+  "version": "0.2.0",
+  "license": "MIT",
+  "description": "Tketlon Browser - Safety Browser for Privacy",
+  "author": {
+    "name": "AtaLioMego",
+    "url": "https://github.com/AmegoVerse/"
+  },
+  "homepage": "https://github.com/AmegoVerse/",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test",
+    "dist": "electron-builder --win nsis --x64 --publish never"
+  },
+  "devDependencies": {
+    "electron": "^45.2.3",
+    "electron-builder": "^26.18.0"
+  },
+  "build": {
+    "appId": "app.tketlon.browser",
+    "productName": "Tketlon Browser",
+    "copyright": "Copyright © 2026 Cincop by AtaLioMego",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "filters/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": true,
+      "shortcutName": "Tketlon Browser",
+      "uninstallDisplayName": "Tketlon Browser"
+    },
+    "artifactName": "Tketlon-Browser-Setup-${version}.${ext}"
+  }
+}

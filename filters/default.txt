@@ -1,0 +1,32 @@
+# Daftar domain pelacak/iklan (STARTER, bukan daftar lengkap).
+# Satu domain per baris. Subdomain ikut terblokir. Baris berawalan # diabaikan.
+# Ganti/lengkapi dengan daftar hosts yang kamu percaya (mis. EasyPrivacy versi domain).
+doubleclick.net
+googlesyndication.com
+googleadservices.com
+adservice.google.com
+google-analytics.com
+scorecardresearch.com
+quantserve.com
+hotjar.com
+taboola.com
+outbrain.com
+criteo.com
+criteo.net
+adnxs.com
+amazon-adsystem.com
+moatads.com
+krxd.net
+rubiconproject.com
+pubmatic.com
+openx.net
+casalemedia.com
+bat.bing.com
+analytics.tiktok.com
+ads.twitter.com
+static.ads-twitter.com
+mixpanel.com
+fullstory.com
+mouseflow.com
+adform.net
+smartadserver.com
